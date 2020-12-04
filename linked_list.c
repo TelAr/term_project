@@ -10,7 +10,7 @@
 #include <linux/mutex.h>
 
 #define BILLION 1000000000
-#define PARA_NUM 100000
+#define PARA_NUM 1000000
 
 struct timespec spclock[2];
 struct list_head my_list;
@@ -26,11 +26,13 @@ bool thread_search_over;
 unsigned long long add_to_list_time;
 unsigned long long add_to_list_count;
 
-int search_target=PARA_NUM/2;
-//int search_target=100;
+//int search_target=PARA_NUM;
+int search_target=100;
 
 struct mutex counter_lock;
 struct mutex statement_lock;
+struct task_struct *f_search=NULL;
+struct task_struct *b_search=NULL;
 
 struct my_node {
 
@@ -112,30 +114,22 @@ static int search_front(void * _arg) {
 	
 	list_for_each_entry(current_node, &my_list, list){
 		
-
-		
-		
 		if(thread_search_over){
 		
 			break;
 		}
 		
-//		printk("%d\n", current_node->data);
-		
-		mutex_lock(&counter_lock);
+//		printk("b_%d\n", current_node->data);
+
 		if (current_node->data == search_target&&!thread_search_over) {
 			getnstimeofday(&spclock[1]);
 			add_to_list_count=calclock3(spclock);
-			printk("%d nodes search_f\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
+			printk("front find\n");
 			thread_search_over=true;
-			mutex_unlock(&counter_lock);
 			mutex_unlock(&statement_lock);
-
 			break;
 		}
 		
-		mutex_unlock(&counter_lock);
-
 	}	
 
 	do_exit(0);
@@ -156,20 +150,17 @@ static int search_back(void * _arg) {
 			break;
 		}
 		
-//		printk("%d\n", current_node->data);
+//		printk("b_%d\n", current_node->data);
 		
-		mutex_lock(&counter_lock);
+
 		if (current_node->data == search_target&&!thread_search_over) {
 			getnstimeofday(&spclock[1]);
 			add_to_list_count=calclock3(spclock);
-			printk("%d nodes search_b\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
+			printk("back find\n");
 			thread_search_over=true;
-			mutex_unlock(&counter_lock);
 			mutex_unlock(&statement_lock);
 			break;
 		}
-		mutex_unlock(&counter_lock);
-
 	}	
 
 	do_exit(0);
@@ -183,10 +174,14 @@ int search_thread_create(void) {
 	
 	thread_search_over=false;
 	
+	
 	kthread_run(search_front,NULL,"search_front");
 	kthread_run(search_back,NULL,"search_back");
 
-	
+	mutex_lock(&statement_lock);
+	printk("%d nodes search\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
+	mutex_unlock(&statement_lock);	
+		
 	return 0;
 }
 
