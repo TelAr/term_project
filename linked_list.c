@@ -114,19 +114,19 @@ static int search_front(void * _arg) {
 	
 	list_for_each_entry(current_node, &my_list, list){
 		
-		if(thread_search_over){
+		if(thread_search_over){//if one thread is over, then this boolean flag change True and run break 
 		
 			break;
 		}
 		
-//		printk("b_%d\n", current_node->data);
+//		printk("b_%d\n", current_node->data);//for debugging
 
-		if (current_node->data == search_target&&!thread_search_over) {
+		if (current_node->data == search_target&&!thread_search_over) {//if search is completed
+			thread_search_over=true;
 			getnstimeofday(&spclock[1]);
 			add_to_list_count=calclock3(spclock);
-			printk("front find\n");
-			thread_search_over=true;
-			mutex_unlock(&statement_lock);
+			printk("front find\n");//for debugging
+			mutex_unlock(&statement_lock);//unlock mutex about main (parent) thread
 			break;
 		}
 		
@@ -141,24 +141,23 @@ static int search_back(void * _arg) {
 
 	struct my_node *current_node;
 
-	list_for_each_entry_reverse(current_node, &my_list, list){
+	list_for_each_entry_reverse(current_node, &my_list, list){//this api is travel back way
 		
 
 		
-		if(thread_search_over){
+		if(thread_search_over){//if one thread is over, then this boolean flag change True and run br
 
 			break;
 		}
 		
-//		printk("b_%d\n", current_node->data);
+//		printk("b_%d\n", current_node->data);//for debugging
 		
-
-		if (current_node->data == search_target&&!thread_search_over) {
+		if (current_node->data == search_target&&!thread_search_over) {//if search is completed
+			thread_search_over=true;
 			getnstimeofday(&spclock[1]);
 			add_to_list_count=calclock3(spclock);
-			printk("back find\n");
-			thread_search_over=true;
-			mutex_unlock(&statement_lock);
+			printk("back find\n");//for debugging
+			mutex_unlock(&statement_lock);//unlock mutex about main (parent) thread
 			break;
 		}
 	}	
@@ -174,11 +173,11 @@ int search_thread_create(void) {
 	
 	thread_search_over=false;
 	
-	
+	//we run two thread, one is search front way, and the other is search back way
 	kthread_run(search_front,NULL,"search_front");
 	kthread_run(search_back,NULL,"search_back");
 
-	mutex_lock(&statement_lock);
+	mutex_lock(&statement_lock);//lock mutex before search is over
 	printk("%d nodes search\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
 	mutex_unlock(&statement_lock);	
 		
