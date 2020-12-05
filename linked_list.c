@@ -149,7 +149,7 @@ static int search_back(void * _arg) {
 		
 
 		
-		if(thread_search_over){//if one thread is over, then this boolean flag change True and run br
+		if(thread_search_over){//if one thread is over, then this boolean flag change True and run break
 
 			break;
 		}
