@@ -5,3 +5,4 @@
 *.symvers
 *.mod.c
 *.cmd
+.tmp_5474/tmp

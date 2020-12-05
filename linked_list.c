@@ -35,6 +35,10 @@ int search_target=100;
 
 struct mutex counter_lock;
 struct mutex statement_lock;
+
+struct mutex f_lock;
+struct mutex b_lock;
+
 struct task_struct *f_search=NULL;
 struct task_struct *b_search=NULL;
 
@@ -87,7 +91,7 @@ static int insert(void * _arg) {
 		
 			getnstimeofday(&spclock[1]);
 			add_to_list_count=calclock3(spclock);
-			printk("%d times insert\nrunning time:%llu\n", insert_count, add_to_list_count);
+//			printk("%d times insert\nrunning time:%llu\n", insert_count, add_to_list_count);
 			mutex_unlock(&statement_lock);
 		}
 		
@@ -126,20 +130,17 @@ static int search_front(void * _arg) {
 		
 			break;
 		}
-		
-//		printk("b_%d\n", current_node->data);//for debugging
 
 		if (current_node->data == search_target&&!thread_search_over) {//if search is completed
 			thread_search_over=true;
 			getnstimeofday(&spclock[1]);
 			add_to_list_count=calclock3(spclock);
-			printk("front find\n");//for debugging
 			mutex_unlock(&statement_lock);//unlock mutex about main (parent) thread
 			break;
 		}
 		
 	}	
-
+	mutex_unlock(&f_lock);
 	do_exit(0);
 
 	return 0;
@@ -158,18 +159,15 @@ static int search_back(void * _arg) {
 			break;
 		}
 		
-//		printk("b_%d\n", current_node->data);//for debugging
-		
 		if (current_node->data == search_target&&!thread_search_over) {//if search is completed
 			thread_search_over=true;
 			getnstimeofday(&spclock[1]);
 			add_to_list_count=calclock3(spclock);
-			printk("back find\n");//for debugging
 			mutex_unlock(&statement_lock);//unlock mutex about main (parent) thread
 			break;
 		}
 	}	
-
+	mutex_unlock(&b_lock);
 	do_exit(0);
 
 	return 0;
@@ -182,6 +180,9 @@ int search_thread_create(void) {
 	thread_search_over=false;
 	
 	mutex_lock(&statement_lock);
+	mutex_lock(&f_lock);
+	mutex_lock(&b_lock);
+	
 	getnstimeofday(&spclock[0]);
 	
 	//we run two thread, one is search front way, and the other is search back way
@@ -189,7 +190,12 @@ int search_thread_create(void) {
 	kthread_run(search_back,NULL,"search_back");
 
 	mutex_lock(&statement_lock);//lock mutex before search is over
-	printk("%d nodes search(improved)\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
+	printk("i:%llu\n", add_to_list_count);
+	mutex_lock(&f_lock);
+	mutex_lock(&b_lock);
+	
+	mutex_unlock(&f_lock);
+	mutex_unlock(&b_lock);
 	mutex_unlock(&statement_lock);	
 		
 	return 0;
@@ -209,7 +215,7 @@ static int search_not_improve(void) {
 			thread_search_over=true;
 			getnstimeofday(&spclock[1]);
 			add_to_list_count=calclock3(spclock);
-			printk("%d nodes search\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
+			printk("n:%llu\n", add_to_list_count);
 			mutex_unlock(&statement_lock);//unlock mutex about main (parent) thread
 			break;
 		}
@@ -249,7 +255,7 @@ static int delete(void * _arg) {
 		thread_over=true;
 		getnstimeofday(&spclock[1]);
 		add_to_list_count=calclock3(spclock);
-		printk("%d times delete\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
+//		printk("%d times delete\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
 		thread_over=true;
 		mutex_unlock(&statement_lock);
 	}
@@ -282,24 +288,32 @@ int delete_thread_create(void) {
 
 void test_case(void) {
 	
+	int i;
+	
 	INIT_LIST_HEAD(&my_list);
 	mutex_init(&statement_lock);
 	mutex_init(&counter_lock);
+	mutex_init(&f_lock);
+	mutex_init(&b_lock);
+	
 	
 	//insert
 	
 	insert_thread_create();
 	
-	//search improve ver
+	for(i=1; search_target<PARA_NUM;i++)
+	{
+		search_target=i*100000;
+		//search improve ver
+		
+		printk("seaching target:%d\n", search_target);
+		search_thread_create();
 	
-	printk("seaching target:%d\n", search_target);
-	search_thread_create();
 	
-	
-	//search not improve
+		//search not improve
 
-	search_not_improve();
-	
+		search_not_improve();
+	}	
 	//delete
 
 	delete_thread_create();
