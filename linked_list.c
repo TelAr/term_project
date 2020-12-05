@@ -26,7 +26,10 @@ bool thread_search_over;
 unsigned long long add_to_list_time;
 unsigned long long add_to_list_count;
 
-//int search_target=PARA_NUM;
+
+//setting what we want to find
+//improve case, PARA_NUM/2 is worst case, normal case, near to 1 is worst case
+//int search_target=PARA_NUM-100;
 int search_target=100;
 
 struct mutex counter_lock;
@@ -178,12 +181,32 @@ int search_thread_create(void) {
 	kthread_run(search_back,NULL,"search_back");
 
 	mutex_lock(&statement_lock);//lock mutex before search is over
-	printk("%d nodes search\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
+	printk("%d nodes search(improved)\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
 	mutex_unlock(&statement_lock);	
 		
 	return 0;
 }
 
+
+static int search_not_improve(void) {
+
+	struct my_node *current_node;
+	
+	list_for_each_entry(current_node, &my_list, list){
+
+		if (current_node->data == search_target) {//if search is completed
+			thread_search_over=true;
+			getnstimeofday(&spclock[1]);
+			add_to_list_count=calclock3(spclock);
+			printk("%d nodes search\nrunning time:%llu\n", PARA_NUM, add_to_list_count);
+			mutex_unlock(&statement_lock);//unlock mutex about main (parent) thread
+			break;
+		}
+		
+	}	
+
+	return 0;
+}
 
 static int delete(void * _arg) {
 
@@ -254,13 +277,20 @@ void test_case(void) {
 	
 	insert_thread_create();
 	
+	printk("seaching target:%d\n", search_target);
 	
-	//search	
+	//search improve ver
 	mutex_lock(&statement_lock);
 	getnstimeofday(&spclock[0]);
 
 	search_thread_create();
 	
+	
+	//search not improve
+	mutex_lock(&statement_lock);
+	getnstimeofday(&spclock[0]);
+
+	search_not_improve();
 	
 	//delete
 	mutex_lock(&statement_lock);
