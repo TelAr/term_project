@@ -7,5 +7,5 @@ PWD := $(shell pwd)
 
 default :
 	$(MAKE) -C $(KERNEL_DIR) M=$(shell pwd) modules
-claen :
-	$(MAKE) -C $(KERNEL_DIR) M=$(shell pwd) claen
+clean :
+	$(MAKE) -C $(KERNEL_DIR) M=$(shell pwd) clean
