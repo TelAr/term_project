@@ -102,6 +102,10 @@ static int insert(void * _arg) {
 int insert_thread_create(void) {
 
 	int i;
+	
+	mutex_lock(&statement_lock);
+	getnstimeofday(&spclock[0]);
+	
 	for(i=0;i<4;i++)
 	{
 		int* arg=(int*)kmalloc(sizeof(int), GFP_KERNEL);
@@ -177,6 +181,9 @@ int search_thread_create(void) {
 	
 	thread_search_over=false;
 	
+	mutex_lock(&statement_lock);
+	getnstimeofday(&spclock[0]);
+	
 	//we run two thread, one is search front way, and the other is search back way
 	kthread_run(search_front,NULL,"search_front");
 	kthread_run(search_back,NULL,"search_back");
@@ -192,6 +199,9 @@ int search_thread_create(void) {
 static int search_not_improve(void) {
 
 	struct my_node *current_node;
+	
+	mutex_lock(&statement_lock);
+	getnstimeofday(&spclock[0]);
 	
 	list_for_each_entry(current_node, &my_list, list){
 
@@ -253,7 +263,11 @@ int delete_thread_create(void) {
 
 	int i;
 	
+	mutex_lock(&statement_lock);
+	getnstimeofday(&spclock[0]);
+	
 	thread_over=false;
+	
 	
 	for(i=0;i<4;i++)
 	{
@@ -273,29 +287,20 @@ void test_case(void) {
 	mutex_init(&counter_lock);
 	
 	//insert
-	mutex_lock(&statement_lock);
-	getnstimeofday(&spclock[0]);
 	
 	insert_thread_create();
 	
-	printk("seaching target:%d\n", search_target);
-	
 	//search improve ver
-	mutex_lock(&statement_lock);
-	getnstimeofday(&spclock[0]);
-
+	
+	printk("seaching target:%d\n", search_target);
 	search_thread_create();
 	
 	
 	//search not improve
-	mutex_lock(&statement_lock);
-	getnstimeofday(&spclock[0]);
 
 	search_not_improve();
 	
 	//delete
-	mutex_lock(&statement_lock);
-	getnstimeofday(&spclock[0]);
 
 	delete_thread_create();
 	
