@@ -313,14 +313,13 @@ void test_case(void) {
 	{
 		search_target=i*100000;
 		if(search_target==0) search_target=1;
-		//search improve ver
-			
+		
 		printk("seaching target:%d\n", search_target);
+		
+		//search improve ver
 		search_thread_create();
 	
-	
 		//search not improve
-
 		search_not_improve();
 	}	
 	
