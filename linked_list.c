@@ -301,9 +301,10 @@ void test_case(void) {
 	
 	insert_thread_create();
 	
-	for(i=1; search_target<PARA_NUM;i++)
+	for(i=0; search_target<PARA_NUM;i++)
 	{
 		search_target=i*100000;
+		if(search_target==0) search_target=1;
 		//search improve ver
 		
 		printk("seaching target:%d\n", search_target);
