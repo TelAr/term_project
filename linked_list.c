@@ -27,11 +27,12 @@ bool thread_search_over;
 unsigned long long add_to_list_time;
 unsigned long long add_to_list_count;
 
+unsigned long long imp_time_avr[11];
+unsigned long long nor_time_avr[11];
 
 //setting what we want to find
 //improve case, PARA_NUM/2 is worst case, normal case, near to 1 is worst case
-//int search_target=PARA_NUM-100;
-int search_target=100;
+int search_target;
 
 struct mutex counter_lock;
 struct mutex statement_lock;
@@ -191,6 +192,7 @@ int search_thread_create(void) {
 
 	mutex_lock(&statement_lock);//lock mutex before search is over
 	printk("i:%llu\n", add_to_list_count);
+	
 	mutex_lock(&f_lock);
 	mutex_lock(&b_lock);
 	
@@ -216,12 +218,11 @@ static int search_not_improve(void) {
 			getnstimeofday(&spclock[1]);
 			add_to_list_count=calclock3(spclock);
 			printk("n:%llu\n", add_to_list_count);
-			mutex_unlock(&statement_lock);//unlock mutex about main (parent) thread
 			break;
 		}
 		
 	}	
-
+	mutex_unlock(&statement_lock);//unlock mutex about main (parent) thread
 	return 0;
 }
 
@@ -296,17 +297,24 @@ void test_case(void) {
 	mutex_init(&f_lock);
 	mutex_init(&b_lock);
 	
+	for(i=0; i<11; i++)
+	{
+		imp_time_avr[i]=0;
+		nor_time_avr[i]=0;
+	}
 	
 	//insert
 	
 	insert_thread_create();
 	
-	for(i=0; search_target<PARA_NUM;i++)
+	//search
+
+	for(i=0; search_target<PARA_NUM; i++)
 	{
 		search_target=i*100000;
 		if(search_target==0) search_target=1;
 		//search improve ver
-		
+			
 		printk("seaching target:%d\n", search_target);
 		search_thread_create();
 	
@@ -315,6 +323,7 @@ void test_case(void) {
 
 		search_not_improve();
 	}	
+	
 	//delete
 
 	delete_thread_create();
